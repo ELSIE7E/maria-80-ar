@@ -6,10 +6,10 @@
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
 
-  <title>Maria 80 AR</title>
+  <title>Maria Huerta — 80 Years of Stories</title>
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
@@ -17,36 +17,148 @@
   <!-- MindAR -->
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
+
   <style>
 
-    body {
-      margin: 0;
-      overflow: hidden;
+    * {
+      box-sizing: border-box;
     }
 
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #f7f0df;
+    }
+
+
+    /* =========================
+       WELCOME SCREEN
+       ========================= */
+
+    #welcome-screen {
+      position: fixed;
+      inset: 0;
+
+      z-index: 10000;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 30px;
+
+      background:
+        radial-gradient(
+          circle at center,
+          #fffaf0 0%,
+          #f7e8bf 100%
+        );
+
+      text-align: center;
+    }
+
+
+    #welcome-card {
+      width: 100%;
+      max-width: 420px;
+
+      padding: 38px 26px;
+
+      background: rgba(255, 255, 255, 0.88);
+
+      border: 4px solid #12378b;
+      border-radius: 30px;
+
+      box-shadow:
+        0 15px 45px rgba(0, 0, 0, 0.18);
+    }
+
+
+    #welcome-card h1 {
+      margin: 0 0 5px;
+
+      color: #12378b;
+
+      font-size: 36px;
+      line-height: 1.05;
+    }
+
+
+    #welcome-card h2 {
+      margin: 0 0 25px;
+
+      color: #e5a000;
+
+      font-size: 22px;
+    }
+
+
+    #welcome-card p {
+      margin: 0 auto 28px;
+
+      max-width: 310px;
+
+      color: #333;
+
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+
+    #start-button {
+      width: 100%;
+
+      padding: 17px 20px;
+
+      border: none;
+      border-radius: 50px;
+
+      background: #12378b;
+      color: white;
+
+      font-size: 17px;
+      font-weight: bold;
+
+      cursor: pointer;
+    }
+
+
+    #start-button:active {
+      transform: scale(0.98);
+    }
+
+
+    /* =========================
+       AR INSTRUCTIONS
+       ========================= */
+
     #message {
+      display: none;
+
       position: fixed;
 
-      top: 20px;
+      top: calc(20px + env(safe-area-inset-top));
       left: 50%;
 
       transform: translateX(-50%);
 
       z-index: 9999;
 
-      width: 80%;
-      max-width: 350px;
+      width: 84%;
+      max-width: 380px;
 
-      padding: 12px 20px;
+      padding: 13px 20px;
 
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.78);
       color: white;
 
-      border-radius: 20px;
+      border-radius: 25px;
 
-      font-family: Arial, sans-serif;
       font-size: 16px;
-
       text-align: center;
     }
 
@@ -56,16 +168,9 @@
   <script>
 
     /*
-    ===========================================
-    CUSTOM ROUNDED VIDEO COMPONENT
-    ===========================================
-
-    This creates the video surface ourselves
-    instead of using the normal <a-video>.
-
-    That allows us to:
-      1. Round the corners.
-      2. Crop the video instead of stretching it.
+    ==========================================
+    ROUNDED CRT VIDEO
+    ==========================================
     */
 
     AFRAME.registerComponent(
@@ -80,17 +185,17 @@
 
           width: {
             type: "number",
-            default: 0.47
+            default: 0.365
           },
 
           height: {
             type: "number",
-            default: 0.32
+            default: 0.240
           },
 
           radius: {
             type: "number",
-            default: 0.10
+            default: 0.105
           }
 
         },
@@ -105,10 +210,6 @@
           const radius = this.data.radius;
 
 
-          /*
-          Create video texture
-          */
-
           const texture =
             new THREE.VideoTexture(video);
 
@@ -118,13 +219,6 @@
           texture.magFilter =
             THREE.LinearFilter;
 
-          texture.colorSpace =
-            THREE.SRGBColorSpace;
-
-
-          /*
-          Rectangle geometry
-          */
 
           const geometry =
             new THREE.PlaneGeometry(
@@ -132,14 +226,6 @@
               height
             );
 
-
-          /*
-          Custom material
-
-          The shader handles:
-          - rounded corners
-          - cropping
-          */
 
           const material =
             new THREE.ShaderMaterial({
@@ -194,14 +280,8 @@
                 void main() {
 
                   /*
-                  ---------------------------
-                  VIDEO CROPPING
-                  ---------------------------
-
-                  Original video = 16:9.
-
-                  We crop the left/right edges
-                  instead of stretching people.
+                  Crop 16:9 video
+                  without stretching it.
                   */
 
                   float videoAspect =
@@ -220,9 +300,7 @@
 
 
                   /*
-                  ---------------------------
-                  ROUNDED CORNERS
-                  ---------------------------
+                  Rounded CRT corners.
                   */
 
                   vec2 p =
@@ -251,10 +329,6 @@
                   }
 
 
-                  /*
-                  Display video
-                  */
-
                   gl_FragColor =
                     texture2D(
                       map,
@@ -268,16 +342,12 @@
             });
 
 
-          /*
-          Put our custom video
-          into the A-Frame entity
-          */
-
           const mesh =
             new THREE.Mesh(
               geometry,
               material
             );
+
 
           this.el.setObject3D(
             "mesh",
@@ -297,15 +367,53 @@
 <body>
 
 
-  <div id="message">
-    Point your camera at Maria's TV
+  <!-- =========================
+       WELCOME SCREEN
+       ========================= -->
+
+  <div id="welcome-screen">
+
+    <div id="welcome-card">
+
+      <h1>María Huerta</h1>
+
+      <h2>80 Years of Stories</h2>
+
+      <p>
+        Point your camera at the keepsake
+        and discover a special story created
+        to celebrate 80 years of memories.
+      </p>
+
+      <button id="start-button">
+        START THE EXPERIENCE
+      </button>
+
+    </div>
+
   </div>
 
 
+
+  <!-- AR MESSAGE -->
+
+  <div id="message">
+    Point your camera at María's TV
+  </div>
+
+
+
+  <!-- =========================
+       AR SCENE
+       ========================= -->
+
   <a-scene
+
+    id="ar-scene"
 
     mindar-image="
       imageTargetSrc: ./targets.mind;
+      autoStart: false;
     "
 
     color-space="sRGB"
@@ -322,7 +430,7 @@
   >
 
 
-    <!-- VIDEO FILE -->
+    <!-- VIDEO -->
 
     <a-assets>
 
@@ -337,12 +445,11 @@
         webkit-playsinline
 
         crossorigin="anonymous"
-
-        loop
       >
       </video>
 
     </a-assets>
+
 
 
     <!-- CAMERA -->
@@ -357,7 +464,8 @@
     </a-camera>
 
 
-    <!-- MARIA ARTWORK TARGET -->
+
+    <!-- TARGET -->
 
     <a-entity
 
@@ -370,10 +478,6 @@
     >
 
 
-      <!--
-      ROUNDED CRT VIDEO SCREEN
-      -->
-
       <a-entity
 
         rounded-video="
@@ -382,7 +486,7 @@
           height: 0.240;
           radius: 0.105;
         "
-        
+
         position="
           -0.045
           -0.025
@@ -399,20 +503,158 @@
   </a-scene>
 
 
+
   <script>
 
+    const welcomeScreen =
+      document.querySelector(
+        "#welcome-screen"
+      );
+
+    const startButton =
+      document.querySelector(
+        "#start-button"
+      );
+
+    const scene =
+      document.querySelector(
+        "#ar-scene"
+      );
+
     const target =
-      document.querySelector("#target");
+      document.querySelector(
+        "#target"
+      );
 
     const video =
-      document.querySelector("#ar-video");
+      document.querySelector(
+        "#ar-video"
+      );
 
     const message =
-      document.querySelector("#message");
+      document.querySelector(
+        "#message"
+      );
+
+
+    let experienceStarted = false;
+
 
 
     /*
+    ==========================================
+    START EXPERIENCE
+    ==========================================
+    */
+
+    startButton.addEventListener(
+      "click",
+      async () => {
+
+        if (experienceStarted) {
+          return;
+        }
+
+        experienceStarted = true;
+
+        startButton.disabled = true;
+
+        startButton.innerHTML =
+          "OPENING CAMERA...";
+
+
+        /*
+        This silent play/pause occurs during
+        the user's tap.
+
+        It helps establish the media interaction
+        on mobile browsers.
+        */
+
+        video.muted = true;
+
+        try {
+
+          await video.play();
+
+          video.pause();
+
+          video.currentTime = 0;
+
+        }
+
+        catch (error) {
+
+          console.log(
+            "Media initialization:",
+            error
+          );
+
+        }
+
+
+        /*
+        Start MindAR manually.
+        */
+
+        try {
+
+          const arSystem =
+            scene.systems[
+              "mindar-image-system"
+            ];
+
+          await arSystem.start();
+
+
+          /*
+          Camera successfully started.
+          */
+
+          welcomeScreen.style.display =
+            "none";
+
+          message.style.display =
+            "block";
+
+          message.innerHTML =
+            "Point your camera at María's TV";
+
+
+          /*
+          We can restore audio after
+          initializing media.
+          */
+
+          video.muted = false;
+
+        }
+
+        catch (error) {
+
+          console.error(
+            "Camera could not start:",
+            error
+          );
+
+          experienceStarted = false;
+
+          startButton.disabled = false;
+
+          startButton.innerHTML =
+            "TRY AGAIN";
+
+        }
+
+      }
+    );
+
+
+
+    /*
+    ==========================================
     TARGET FOUND
+    ==========================================
     */
 
     target.addEventListener(
@@ -420,8 +662,12 @@
       async () => {
 
         message.innerHTML =
-          "TV detected! Playing video...";
+          "TV detected!";
 
+
+        /*
+        Start from beginning the first time.
+        */
 
         try {
 
@@ -432,12 +678,12 @@
         catch (error) {
 
           console.log(
-            "Autoplay blocked:",
+            "Playback blocked:",
             error
           );
 
           message.innerHTML =
-            "TV detected — tap the screen to play.";
+            "TV detected — tap once to play.";
 
         }
 
@@ -445,8 +691,11 @@
     );
 
 
+
     /*
+    ==========================================
     TARGET LOST
+    ==========================================
     */
 
     target.addEventListener(
@@ -456,21 +705,26 @@
         video.pause();
 
         message.innerHTML =
-          "Point your camera back at Maria's TV.";
+          "Point your camera back at María's TV";
 
       }
     );
 
 
+
     /*
-    MOBILE AUTOPLAY FALLBACK
+    Fallback if Safari still requires
+    another interaction.
     */
 
     document.body.addEventListener(
       "click",
       async () => {
 
-        if (video.paused) {
+        if (
+          experienceStarted &&
+          video.paused
+        ) {
 
           try {
 
