@@ -278,6 +278,7 @@
 
                 void main() {
 
+
                   /*
                   VIDEO CROPPING
                   */
@@ -354,269 +355,6 @@
           this.el.setObject3D(
             "mesh",
             mesh
-          );
-
-        }
-
-      }
-    );
-
-
-
-    /*
-    ===========================================
-    STABILIZED AR ANCHOR
-    ===========================================
-
-    MindAR still does all target detection.
-
-    Instead of putting the video directly inside
-    the MindAR target, this component follows the
-    target gradually.
-
-    This reduces tiny frame-to-frame movements
-    that can make the video appear to shake.
-
-    IMPORTANT:
-    This does NOT change the calibrated video
-    size or its position inside the television.
-    ===========================================
-    */
-
-    AFRAME.registerComponent(
-      "stable-anchor",
-      {
-
-        schema: {
-
-          target: {
-            type: "selector"
-          },
-
-          /*
-          Larger values = follows faster.
-          Smaller values = smoother but more lag.
-
-          These values are intentionally moderate.
-          */
-
-          positionSpeed: {
-            type: "number",
-            default: 12
-          },
-
-          rotationSpeed: {
-            type: "number",
-            default: 10
-          },
-
-          scaleSpeed: {
-            type: "number",
-            default: 12
-          }
-
-        },
-
-
-        init: function () {
-
-          this.target =
-            this.data.target;
-
-
-          this.tracking =
-            false;
-
-
-          this.initialized =
-            false;
-
-
-          /*
-          Hide stabilized content until
-          MindAR actually finds the target.
-          */
-
-          this.el.object3D.visible =
-            false;
-
-
-          /*
-          TARGET FOUND
-          */
-
-          this.target.addEventListener(
-            "targetFound",
-            () => {
-
-              this.tracking =
-                true;
-
-
-              /*
-              On first detection, SNAP directly
-              to the target.
-
-              This prevents the video from
-              flying in from another position.
-              */
-
-              this.copyTargetImmediately();
-
-
-              this.initialized =
-                true;
-
-
-              this.el.object3D.visible =
-                true;
-
-            }
-          );
-
-
-          /*
-          TARGET LOST
-          */
-
-          this.target.addEventListener(
-            "targetLost",
-            () => {
-
-              this.tracking =
-                false;
-
-              this.initialized =
-                false;
-
-              this.el.object3D.visible =
-                false;
-
-            }
-          );
-
-        },
-
-
-
-        copyTargetImmediately: function () {
-
-          if (!this.target) {
-            return;
-          }
-
-
-          const source =
-            this.target.object3D;
-
-          const destination =
-            this.el.object3D;
-
-
-          destination.position.copy(
-            source.position
-          );
-
-
-          destination.quaternion.copy(
-            source.quaternion
-          );
-
-
-          destination.scale.copy(
-            source.scale
-          );
-
-        },
-
-
-
-        tick: function (time, delta) {
-
-          if (
-            !this.tracking ||
-            !this.initialized ||
-            !this.target
-          ) {
-
-            return;
-
-          }
-
-
-          const source =
-            this.target.object3D;
-
-          const destination =
-            this.el.object3D;
-
-
-          /*
-          Convert frame time to seconds.
-          */
-
-          const dt =
-            Math.min(
-              delta / 1000,
-              0.1
-            );
-
-
-          /*
-          Exponential smoothing.
-
-          This behaves consistently even if
-          the phone's frame rate changes.
-          */
-
-          const positionAlpha =
-            1 -
-            Math.exp(
-              -this.data.positionSpeed * dt
-            );
-
-
-          const rotationAlpha =
-            1 -
-            Math.exp(
-              -this.data.rotationSpeed * dt
-            );
-
-
-          const scaleAlpha =
-            1 -
-            Math.exp(
-              -this.data.scaleSpeed * dt
-            );
-
-
-          /*
-          SMOOTH POSITION
-          */
-
-          destination.position.lerp(
-            source.position,
-            positionAlpha
-          );
-
-
-          /*
-          SMOOTH ROTATION
-          */
-
-          destination.quaternion.slerp(
-            source.quaternion,
-            rotationAlpha
-          );
-
-
-          /*
-          SMOOTH SCALE
-          */
-
-          destination.scale.lerp(
-            source.scale,
-            scaleAlpha
           );
 
         }
@@ -741,16 +479,7 @@
 
 
 
-    <!--
-    ==========================================
-    MINDAR IMAGE TARGET
-
-    MindAR tracks this entity.
-
-    The video is intentionally NOT placed
-    directly inside this target anymore.
-    ==========================================
-    -->
+    <!-- IMAGE TARGET -->
 
     <a-entity
 
@@ -761,38 +490,13 @@
       "
 
     >
-    </a-entity>
-
-
-
-    <!--
-    ==========================================
-    STABILIZED VIDEO ANCHOR
-
-    This follows #target smoothly instead of
-    copying every tiny tracking movement.
-    ==========================================
-    -->
-
-    <a-entity
-
-      id="stable-target"
-
-      stable-anchor="
-        target: #target;
-        positionSpeed: 12;
-        rotationSpeed: 10;
-        scaleSpeed: 12;
-      "
-
-    >
 
 
       <!--
       ==========================================
       CALIBRATED TV VIDEO
 
-      THESE VALUES ARE UNCHANGED.
+      DO NOT CHANGE THESE VALUES.
       ==========================================
       -->
 
@@ -870,6 +574,11 @@
 
       if (!mindarSystem) {
 
+        /*
+        MindAR is not ready yet.
+        Check again shortly.
+        */
+
         setTimeout(
           enableStartButton,
           150
@@ -890,6 +599,13 @@
     }
 
 
+
+    /*
+    If scene is already loaded,
+    check MindAR immediately.
+
+    Otherwise wait for A-Frame loaded event.
+    */
 
     if (scene.hasLoaded) {
 
@@ -913,13 +629,14 @@
     START EXPERIENCE
     ==========================================
 
-    This remains the ONE intentional user tap.
+    This is the ONE intentional user tap.
 
-    It unlocks:
-    1. Video playback
-    2. Audio
-    3. MindAR
-    4. Camera permission
+    We use it to:
+
+    1. Unlock video playback.
+    2. Unlock audio.
+    3. Start MindAR.
+    4. Request camera permission.
     ==========================================
     */
 
@@ -948,10 +665,19 @@
         /*
         ======================================
         UNLOCK VIDEO + AUDIO
+
+        Because this happens directly from the
+        user's button tap, Safari has a user
+        gesture associated with playback.
         ======================================
         */
 
         try {
+
+          /*
+          Start muted first for maximum
+          Safari compatibility.
+          */
 
           video.muted = true;
 
@@ -961,8 +687,20 @@
           await video.play();
 
 
+          /*
+          While still inside the user's
+          interaction, switch audio back on.
+          */
+
           video.muted = false;
 
+
+          /*
+          We do NOT want the actual movie
+          running behind the welcome screen.
+
+          Pause and reset it immediately.
+          */
 
           video.pause();
 
@@ -1003,6 +741,10 @@
           await mindarSystem.start();
 
 
+          /*
+          CAMERA STARTED SUCCESSFULLY
+          */
+
           welcome.style.display =
             "none";
 
@@ -1021,6 +763,11 @@
             error
           );
 
+
+          /*
+          If something genuinely fails,
+          allow another attempt.
+          */
 
           experienceStarted = false;
 
@@ -1055,6 +802,12 @@
 
         try {
 
+          /*
+          Audio should now be available because
+          playback was unlocked during the
+          Start Experience tap.
+          */
+
           video.muted = false;
 
           video.volume = 1.0;
@@ -1062,6 +815,11 @@
 
           await video.play();
 
+
+          /*
+          Hide message after playback begins
+          so the AR experience looks cleaner.
+          */
 
           setTimeout(
             () => {
@@ -1086,6 +844,11 @@
             error
           );
 
+
+          /*
+          Safari may still require another
+          interaction for AUDIO on some devices.
+          */
 
           message.style.display =
             "block";
@@ -1130,6 +893,13 @@
     /*
     ==========================================
     SAFARI AUDIO FALLBACK
+    ==========================================
+
+    This should only be needed if Safari
+    refuses audio despite our initial unlock.
+
+    If the message says "tap once for sound",
+    one tap will resume with audio.
     ==========================================
     */
 
