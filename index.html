@@ -9,14 +9,13 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
 
-  <title>Maria Huerta — 80 Years of Stories</title>
+  <title>María Huerta — 80 Years of Stories</title>
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 
   <!-- MindAR -->
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-
 
   <style>
 
@@ -34,7 +33,6 @@
       background: #f7f0df;
     }
 
-
     /* =========================
        WELCOME SCREEN
        ========================= */
@@ -42,7 +40,6 @@
     #welcome-screen {
       position: fixed;
       inset: 0;
-
       z-index: 10000;
 
       display: flex;
@@ -61,7 +58,6 @@
       text-align: center;
     }
 
-
     #welcome-card {
       width: 100%;
       max-width: 420px;
@@ -77,7 +73,6 @@
         0 15px 45px rgba(0, 0, 0, 0.18);
     }
 
-
     #welcome-card h1 {
       margin: 0 0 5px;
 
@@ -87,7 +82,6 @@
       line-height: 1.05;
     }
 
-
     #welcome-card h2 {
       margin: 0 0 25px;
 
@@ -95,7 +89,6 @@
 
       font-size: 22px;
     }
-
 
     #welcome-card p {
       margin: 0 auto 28px;
@@ -107,7 +100,6 @@
       font-size: 17px;
       line-height: 1.5;
     }
-
 
     #start-button {
       width: 100%;
@@ -126,14 +118,12 @@
       cursor: pointer;
     }
 
-
     #start-button:active {
       transform: scale(0.98);
     }
 
-
     /* =========================
-       AR INSTRUCTIONS
+       AR MESSAGE
        ========================= */
 
     #message {
@@ -167,11 +157,9 @@
 
   <script>
 
-    /*
-    ==========================================
-    ROUNDED CRT VIDEO
-    ==========================================
-    */
+    /* ==========================================
+       CUSTOM ROUNDED VIDEO COMPONENT
+       ========================================== */
 
     AFRAME.registerComponent(
       "rounded-video",
@@ -279,10 +267,8 @@
 
                 void main() {
 
-                  /*
-                  Crop 16:9 video
-                  without stretching it.
-                  */
+                  /* Crop the 16:9 video
+                     without stretching it */
 
                   float videoAspect =
                     16.0 / 9.0;
@@ -299,9 +285,7 @@
                     crop;
 
 
-                  /*
-                  Rounded CRT corners.
-                  */
+                  /* Rounded CRT corners */
 
                   vec2 p =
                     abs(vUv - 0.5);
@@ -367,9 +351,9 @@
 <body>
 
 
-  <!-- =========================
+  <!-- ==========================================
        WELCOME SCREEN
-       ========================= -->
+       ========================================== -->
 
   <div id="welcome-screen">
 
@@ -395,7 +379,9 @@
 
 
 
-  <!-- AR MESSAGE -->
+  <!-- ==========================================
+       AR INSTRUCTION MESSAGE
+       ========================================== -->
 
   <div id="message">
     Point your camera at María's TV
@@ -403,9 +389,9 @@
 
 
 
-  <!-- =========================
+  <!-- ==========================================
        AR SCENE
-       ========================= -->
+       ========================================== -->
 
   <a-scene
 
@@ -430,7 +416,9 @@
   >
 
 
-    <!-- VIDEO -->
+    <!-- ==========================================
+         VIDEO ASSET
+         ========================================== -->
 
     <a-assets>
 
@@ -452,7 +440,9 @@
 
 
 
-    <!-- CAMERA -->
+    <!-- ==========================================
+         CAMERA
+         ========================================== -->
 
     <a-camera
 
@@ -465,7 +455,9 @@
 
 
 
-    <!-- TARGET -->
+    <!-- ==========================================
+         IMAGE TARGET
+         ========================================== -->
 
     <a-entity
 
@@ -478,7 +470,22 @@
     >
 
 
+      <!--
+        IMPORTANT:
+        These are our calibrated TV-screen values.
+
+        Width  = 0.365
+        Height = 0.240
+        X      = -0.045
+        Y      = -0.025
+        Radius = 0.105
+
+        Don't change these for now.
+      -->
+
       <a-entity
+
+        id="video-plane"
 
         rounded-video="
           src: #ar-video;
@@ -493,6 +500,8 @@
           0.01
         "
 
+        visible="false"
+
       >
       </a-entity>
 
@@ -504,6 +513,10 @@
 
 
 
+  <!-- ==========================================
+       EXPERIENCE LOGIC
+       ========================================== -->
+
   <script>
 
     const welcomeScreen =
@@ -511,25 +524,36 @@
         "#welcome-screen"
       );
 
+
     const startButton =
       document.querySelector(
         "#start-button"
       );
+
 
     const scene =
       document.querySelector(
         "#ar-scene"
       );
 
+
     const target =
       document.querySelector(
         "#target"
       );
 
+
     const video =
       document.querySelector(
         "#ar-video"
       );
+
+
+    const videoPlane =
+      document.querySelector(
+        "#video-plane"
+      );
+
 
     const message =
       document.querySelector(
@@ -541,11 +565,9 @@
 
 
 
-    /*
-    ==========================================
-    START EXPERIENCE
-    ==========================================
-    */
+    /* ==========================================
+       START EXPERIENCE
+       ========================================== */
 
     startButton.addEventListener(
       "click",
@@ -555,47 +577,15 @@
           return;
         }
 
+
         experienceStarted = true;
+
 
         startButton.disabled = true;
 
         startButton.innerHTML =
           "OPENING CAMERA...";
 
-
-        /*
-        This silent play/pause occurs during
-        the user's tap.
-
-        It helps establish the media interaction
-        on mobile browsers.
-        */
-
-        video.muted = true;
-
-        try {
-
-          await video.play();
-
-          video.pause();
-
-          video.currentTime = 0;
-
-        }
-
-        catch (error) {
-
-          console.log(
-            "Media initialization:",
-            error
-          );
-
-        }
-
-
-        /*
-        Start MindAR manually.
-        */
 
         try {
 
@@ -604,15 +594,22 @@
               "mindar-image-system"
             ];
 
+
           await arSystem.start();
 
 
           /*
-          Camera successfully started.
+          Camera is now running.
+          Remove the welcome screen.
           */
 
           welcomeScreen.style.display =
             "none";
+
+
+          /*
+          Show instructions.
+          */
 
           message.style.display =
             "block";
@@ -622,13 +619,18 @@
 
 
           /*
-          We can restore audio after
-          initializing media.
+          The AR video remains hidden
+          until MindAR actually recognizes
+          the target.
           */
 
-          video.muted = false;
+          videoPlane.setAttribute(
+            "visible",
+            "false"
+          );
 
         }
+
 
         catch (error) {
 
@@ -637,7 +639,9 @@
             error
           );
 
+
           experienceStarted = false;
+
 
           startButton.disabled = false;
 
@@ -651,29 +655,55 @@
 
 
 
-    /*
-    ==========================================
-    TARGET FOUND
-    ==========================================
-    */
+    /* ==========================================
+       TARGET FOUND
+       ========================================== */
 
     target.addEventListener(
       "targetFound",
       async () => {
 
-        message.innerHTML =
-          "TV detected!";
-
-
         /*
-        Start from beginning the first time.
+        MindAR has recognized the TV artwork.
+        Only NOW do we reveal the video.
         */
+
+        videoPlane.setAttribute(
+          "visible",
+          "true"
+        );
+
+
+        message.innerHTML =
+          "TV detected! Playing video...";
+
 
         try {
 
           await video.play();
 
+
+          /*
+          Once video successfully starts,
+          remove the message after a moment.
+          */
+
+          setTimeout(
+            () => {
+
+              if (!video.paused) {
+
+                message.style.display =
+                  "none";
+
+              }
+
+            },
+            1200
+          );
+
         }
+
 
         catch (error) {
 
@@ -682,8 +712,12 @@
             error
           );
 
+
+          message.style.display =
+            "block";
+
           message.innerHTML =
-            "TV detected — tap once to play.";
+            "TV detected — tap the screen to play.";
 
         }
 
@@ -692,17 +726,38 @@
 
 
 
-    /*
-    ==========================================
-    TARGET LOST
-    ==========================================
-    */
+    /* ==========================================
+       TARGET LOST
+       ========================================== */
 
     target.addEventListener(
       "targetLost",
       () => {
 
+        /*
+        Pause the video when the user
+        moves away from the TV.
+        */
+
         video.pause();
+
+
+        /*
+        Hide the AR video completely.
+        */
+
+        videoPlane.setAttribute(
+          "visible",
+          "false"
+        );
+
+
+        /*
+        Tell the guest what to do.
+        */
+
+        message.style.display =
+          "block";
 
         message.innerHTML =
           "Point your camera back at María's TV";
@@ -712,17 +767,37 @@
 
 
 
-    /*
-    Fallback if Safari still requires
-    another interaction.
-    */
+    /* ==========================================
+       SAFARI PLAYBACK FALLBACK
+       ========================================== */
 
     document.body.addEventListener(
       "click",
       async () => {
 
+        /*
+        Only attempt this after the
+        experience has started.
+        */
+
+        if (!experienceStarted) {
+          return;
+        }
+
+
+        /*
+        Only attempt playback if MindAR
+        currently has the target visible.
+        */
+
+        const isVisible =
+          videoPlane.getAttribute(
+            "visible"
+          );
+
+
         if (
-          experienceStarted &&
+          isVisible &&
           video.paused
         ) {
 
@@ -730,15 +805,56 @@
 
             await video.play();
 
+
+            message.style.display =
+              "none";
+
           }
+
 
           catch (error) {
 
-            console.log(error);
+            console.log(
+              "Safari playback still blocked:",
+              error
+            );
 
           }
 
         }
+
+      }
+    );
+
+
+
+    /* ==========================================
+       VIDEO ENDED
+       ========================================== */
+
+    video.addEventListener(
+      "ended",
+      () => {
+
+        /*
+        For now we simply display a message.
+
+        NEXT STEP:
+        This is where we'll shut down AR
+        and open the retro music player.
+        */
+
+        videoPlane.setAttribute(
+          "visible",
+          "false"
+        );
+
+
+        message.style.display =
+          "block";
+
+        message.innerHTML =
+          "Story complete ❤️";
 
       }
     );
