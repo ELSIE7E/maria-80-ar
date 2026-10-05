@@ -26,6 +26,7 @@
 
     #message {
       position: fixed;
+
       top: 20px;
       left: 50%;
 
@@ -51,10 +52,250 @@
 
   </style>
 
+
+  <script>
+
+    /*
+    ===========================================
+    CUSTOM ROUNDED VIDEO COMPONENT
+    ===========================================
+
+    This creates the video surface ourselves
+    instead of using the normal <a-video>.
+
+    That allows us to:
+      1. Round the corners.
+      2. Crop the video instead of stretching it.
+    */
+
+    AFRAME.registerComponent(
+      "rounded-video",
+      {
+
+        schema: {
+
+          src: {
+            type: "selector"
+          },
+
+          width: {
+            type: "number",
+            default: 0.47
+          },
+
+          height: {
+            type: "number",
+            default: 0.32
+          },
+
+          radius: {
+            type: "number",
+            default: 0.10
+          }
+
+        },
+
+
+        init: function () {
+
+          const video = this.data.src;
+
+          const width = this.data.width;
+          const height = this.data.height;
+          const radius = this.data.radius;
+
+
+          /*
+          Create video texture
+          */
+
+          const texture =
+            new THREE.VideoTexture(video);
+
+          texture.minFilter =
+            THREE.LinearFilter;
+
+          texture.magFilter =
+            THREE.LinearFilter;
+
+          texture.colorSpace =
+            THREE.SRGBColorSpace;
+
+
+          /*
+          Rectangle geometry
+          */
+
+          const geometry =
+            new THREE.PlaneGeometry(
+              width,
+              height
+            );
+
+
+          /*
+          Custom material
+
+          The shader handles:
+          - rounded corners
+          - cropping
+          */
+
+          const material =
+            new THREE.ShaderMaterial({
+
+              transparent: true,
+
+              uniforms: {
+
+                map: {
+                  value: texture
+                },
+
+                radius: {
+                  value: radius
+                },
+
+                aspect: {
+                  value: width / height
+                }
+
+              },
+
+
+              vertexShader: `
+
+                varying vec2 vUv;
+
+                void main() {
+
+                  vUv = uv;
+
+                  gl_Position =
+                    projectionMatrix *
+                    modelViewMatrix *
+                    vec4(position, 1.0);
+
+                }
+
+              `,
+
+
+              fragmentShader: `
+
+                uniform sampler2D map;
+
+                uniform float radius;
+                uniform float aspect;
+
+                varying vec2 vUv;
+
+
+                void main() {
+
+                  /*
+                  ---------------------------
+                  VIDEO CROPPING
+                  ---------------------------
+
+                  Original video = 16:9.
+
+                  We crop the left/right edges
+                  instead of stretching people.
+                  */
+
+                  float videoAspect =
+                    16.0 / 9.0;
+
+                  vec2 videoUV =
+                    vUv;
+
+                  float crop =
+                    aspect / videoAspect;
+
+                  videoUV.x =
+                    0.5 +
+                    (vUv.x - 0.5) *
+                    crop;
+
+
+                  /*
+                  ---------------------------
+                  ROUNDED CORNERS
+                  ---------------------------
+                  */
+
+                  vec2 p =
+                    abs(vUv - 0.5);
+
+                  vec2 box =
+                    vec2(
+                      0.5 - radius,
+                      0.5 - radius
+                    );
+
+                  vec2 q =
+                    p - box;
+
+                  float distanceToCorner =
+                    length(max(q, 0.0));
+
+
+                  if (
+                    distanceToCorner >
+                    radius
+                  ) {
+
+                    discard;
+
+                  }
+
+
+                  /*
+                  Display video
+                  */
+
+                  gl_FragColor =
+                    texture2D(
+                      map,
+                      videoUV
+                    );
+
+                }
+
+              `
+
+            });
+
+
+          /*
+          Put our custom video
+          into the A-Frame entity
+          */
+
+          const mesh =
+            new THREE.Mesh(
+              geometry,
+              material
+            );
+
+          this.el.setObject3D(
+            "mesh",
+            mesh
+          );
+
+        }
+
+      }
+    );
+
+  </script>
+
 </head>
 
 
 <body>
+
 
   <div id="message">
     Point your camera at Maria's TV
@@ -81,12 +322,7 @@
   >
 
 
-    <!--
-      VIDEO FILE
-
-      playsinline is especially important
-      for mobile browsers.
-    -->
+    <!-- VIDEO FILE -->
 
     <a-assets>
 
@@ -112,34 +348,49 @@
     <!-- CAMERA -->
 
     <a-camera
+
       position="0 0 0"
+
       look-controls="enabled: false"
+
     >
     </a-camera>
 
 
-    <!-- IMAGE TARGET -->
+    <!-- MARIA ARTWORK TARGET -->
 
     <a-entity
+
       id="target"
-      mindar-image-target="targetIndex: 0"
+
+      mindar-image-target="
+        targetIndex: 0
+      "
+
     >
 
 
-      <!-- VIDEO DISPLAY -->
+      <!--
+      ROUNDED CRT VIDEO SCREEN
+      -->
 
-      <a-video
+      <a-entity
 
-        src="#ar-video"
-      
-        position="-0.025 -0.035 0.01"
-      
-        width="0.47"
-      
-        height="0.32"
-      
+        rounded-video="
+          src: #ar-video;
+          width: 0.47;
+          height: 0.32;
+          radius: 0.10;
+        "
+
+        position="
+          -0.025
+          -0.035
+          0.01
+        "
+
       >
-      </a-video>
+      </a-entity>
 
 
     </a-entity>
@@ -160,7 +411,9 @@
       document.querySelector("#message");
 
 
-    /* TARGET FOUND */
+    /*
+    TARGET FOUND
+    */
 
     target.addEventListener(
       "targetFound",
@@ -169,14 +422,17 @@
         message.innerHTML =
           "TV detected! Playing video...";
 
+
         try {
 
           await video.play();
 
-        } catch (error) {
+        }
+
+        catch (error) {
 
           console.log(
-            "Video autoplay was blocked:",
+            "Autoplay blocked:",
             error
           );
 
@@ -189,7 +445,9 @@
     );
 
 
-    /* TARGET LOST */
+    /*
+    TARGET LOST
+    */
 
     target.addEventListener(
       "targetLost",
@@ -204,7 +462,9 @@
     );
 
 
-    /* FALLBACK FOR MOBILE AUTOPLAY */
+    /*
+    MOBILE AUTOPLAY FALLBACK
+    */
 
     document.body.addEventListener(
       "click",
@@ -213,9 +473,15 @@
         if (video.paused) {
 
           try {
+
             await video.play();
-          } catch (error) {
+
+          }
+
+          catch (error) {
+
             console.log(error);
+
           }
 
         }
