@@ -9,7 +9,7 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
 
-  <title>María Huerta — 80 Years of Stories</title>
+  <title>Maria 80 AR</title>
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
@@ -18,11 +18,6 @@
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-
-    * {
-      box-sizing: border-box;
-    }
-
     html,
     body {
       margin: 0;
@@ -30,14 +25,15 @@
       height: 100%;
       overflow: hidden;
       font-family: Arial, sans-serif;
-      background: #f7f0df;
     }
 
-    /* =========================
+    /* =====================================================
        WELCOME SCREEN
-       ========================= */
+       This sits ON TOP of MindAR.
+       MindAR is still allowed to initialize underneath it.
+       ===================================================== */
 
-    #welcome-screen {
+    #welcome {
       position: fixed;
       inset: 0;
       z-index: 10000;
@@ -47,156 +43,143 @@
       justify-content: center;
 
       padding: 30px;
+      box-sizing: border-box;
 
-      background:
-        radial-gradient(
-          circle at center,
-          #fffaf0 0%,
-          #f7e8bf 100%
-        );
-
-      text-align: center;
+      background: #fff8e6;
     }
 
     #welcome-card {
       width: 100%;
       max-width: 420px;
-
-      padding: 38px 26px;
-
-      background: rgba(255, 255, 255, 0.88);
-
-      border: 4px solid #12378b;
-      border-radius: 30px;
-
-      box-shadow:
-        0 15px 45px rgba(0, 0, 0, 0.18);
+      text-align: center;
+      color: #12348a;
     }
 
     #welcome-card h1 {
-      margin: 0 0 5px;
-
-      color: #12378b;
-
-      font-size: 36px;
+      margin: 0 0 14px 0;
+      font-size: 34px;
       line-height: 1.05;
     }
 
-    #welcome-card h2 {
-      margin: 0 0 25px;
-
-      color: #e5a000;
-
-      font-size: 22px;
+    #welcome-card .subtitle {
+      margin: 0 0 28px 0;
+      font-size: 19px;
+      line-height: 1.4;
+      color: #333;
     }
 
-    #welcome-card p {
-      margin: 0 auto 28px;
+    #welcome-card .instructions {
+      margin: 0 auto 30px auto;
+      max-width: 330px;
 
-      max-width: 310px;
-
-      color: #333;
-
-      font-size: 17px;
+      font-size: 16px;
       line-height: 1.5;
+
+      color: #555;
     }
 
     #start-button {
-      width: 100%;
-
-      padding: 17px 20px;
-
       border: none;
-      border-radius: 50px;
+      border-radius: 999px;
 
-      background: #12378b;
+      padding: 16px 30px;
+
+      min-width: 220px;
+
+      background: #12348a;
       color: white;
 
-      font-size: 17px;
+      font-size: 18px;
       font-weight: bold;
 
       cursor: pointer;
     }
 
-    #start-button:active {
-      transform: scale(0.98);
+    #start-button:disabled {
+      opacity: 0.6;
     }
 
-    /* =========================
-       AR MESSAGE
-       ========================= */
+    /* =====================================================
+       AR STATUS MESSAGE
+       ===================================================== */
 
     #message {
-      display: none;
-
       position: fixed;
 
-      top: calc(20px + env(safe-area-inset-top));
+      top: max(20px, env(safe-area-inset-top));
       left: 50%;
 
       transform: translateX(-50%);
 
       z-index: 9999;
 
-      width: 84%;
-      max-width: 380px;
+      width: 80%;
+      max-width: 350px;
 
-      padding: 13px 20px;
+      padding: 12px 20px;
 
-      background: rgba(0, 0, 0, 0.78);
+      box-sizing: border-box;
+
+      background: rgba(0, 0, 0, 0.75);
       color: white;
 
-      border-radius: 25px;
+      border-radius: 20px;
 
       font-size: 16px;
       text-align: center;
-    }
 
+      display: none;
+    }
   </style>
 
 
   <script>
+    /*
+    =========================================================
+    CUSTOM ROUNDED VIDEO COMPONENT
 
-    /* ==========================================
-       CUSTOM ROUNDED VIDEO COMPONENT
-       ========================================== */
+    IMPORTANT:
+    These are the dimensions from our working calibrated
+    version. We are preserving them.
+    =========================================================
+    */
 
     AFRAME.registerComponent(
       "rounded-video",
       {
-
         schema: {
-
           src: {
             type: "selector"
           },
 
           width: {
             type: "number",
-            default: 0.365
+            default: 0.47
           },
 
           height: {
             type: "number",
-            default: 0.240
+            default: 0.32
           },
 
           radius: {
             type: "number",
-            default: 0.105
+            default: 0.10
           }
-
         },
 
 
         init: function () {
-
           const video = this.data.src;
 
           const width = this.data.width;
           const height = this.data.height;
           const radius = this.data.radius;
 
+
+          /*
+          Create video texture
+          */
 
           const texture =
             new THREE.VideoTexture(video);
@@ -207,6 +190,13 @@
           texture.magFilter =
             THREE.LinearFilter;
 
+          texture.colorSpace =
+            THREE.SRGBColorSpace;
+
+
+          /*
+          Rectangle geometry
+          */
 
           const geometry =
             new THREE.PlaneGeometry(
@@ -215,13 +205,16 @@
             );
 
 
+          /*
+          Custom material
+          */
+
           const material =
             new THREE.ShaderMaterial({
 
               transparent: true,
 
               uniforms: {
-
                 map: {
                   value: texture
                 },
@@ -233,30 +226,24 @@
                 aspect: {
                   value: width / height
                 }
-
               },
 
 
               vertexShader: `
-
                 varying vec2 vUv;
 
                 void main() {
-
                   vUv = uv;
 
                   gl_Position =
                     projectionMatrix *
                     modelViewMatrix *
                     vec4(position, 1.0);
-
                 }
-
               `,
 
 
               fragmentShader: `
-
                 uniform sampler2D map;
 
                 uniform float radius;
@@ -267,8 +254,12 @@
 
                 void main() {
 
-                  /* Crop the 16:9 video
-                     without stretching it */
+                  /*
+                  VIDEO CROPPING
+
+                  Original video = 16:9.
+                  Crop horizontally rather than stretch.
+                  */
 
                   float videoAspect =
                     16.0 / 9.0;
@@ -285,7 +276,9 @@
                     crop;
 
 
-                  /* Rounded CRT corners */
+                  /*
+                  ROUNDED CORNERS
+                  */
 
                   vec2 p =
                     abs(vUv - 0.5);
@@ -307,9 +300,7 @@
                     distanceToCorner >
                     radius
                   ) {
-
                     discard;
-
                   }
 
 
@@ -318,11 +309,8 @@
                       map,
                       videoUV
                     );
-
                 }
-
               `
-
             });
 
 
@@ -332,17 +320,13 @@
               material
             );
 
-
           this.el.setObject3D(
             "mesh",
             mesh
           );
-
         }
-
       }
     );
-
   </script>
 
 </head>
@@ -350,27 +334,29 @@
 
 <body>
 
-
-  <!-- ==========================================
+  <!-- =====================================================
        WELCOME SCREEN
-       ========================================== -->
+       ===================================================== -->
 
-  <div id="welcome-screen">
+  <div id="welcome">
 
     <div id="welcome-card">
 
-      <h1>María Huerta</h1>
+      <h1>
+        María Huerta
+      </h1>
 
-      <h2>80 Years of Stories</h2>
+      <p class="subtitle">
+        80 años de historias
+      </p>
 
-      <p>
-        Point your camera at the keepsake
-        and discover a special story created
-        to celebrate 80 years of memories.
+      <p class="instructions">
+        Tap below to begin, allow camera access,
+        and then point your phone at María's TV.
       </p>
 
       <button id="start-button">
-        START THE EXPERIENCE
+        Start Experience
       </button>
 
     </div>
@@ -378,20 +364,22 @@
   </div>
 
 
-
-  <!-- ==========================================
-       AR INSTRUCTION MESSAGE
-       ========================================== -->
+  <!-- AR STATUS -->
 
   <div id="message">
-    Point your camera at María's TV
+    Point your camera at Maria's TV
   </div>
 
 
+  <!-- =====================================================
+       MINDAR SCENE
 
-  <!-- ==========================================
-       AR SCENE
-       ========================================== -->
+       IMPORTANT:
+       autoStart is FALSE.
+
+       This lets MindAR load normally but waits for the
+       user's Start Experience tap before activating AR.
+       ===================================================== -->
 
   <a-scene
 
@@ -413,12 +401,12 @@
 
     device-orientation-permission-ui="enabled: false"
 
+    embedded
+
   >
 
 
-    <!-- ==========================================
-         VIDEO ASSET
-         ========================================== -->
+    <!-- VIDEO FILE -->
 
     <a-assets>
 
@@ -433,16 +421,16 @@
         webkit-playsinline
 
         crossorigin="anonymous"
+
+        loop
+        muted
       >
       </video>
 
     </a-assets>
 
 
-
-    <!-- ==========================================
-         CAMERA
-         ========================================== -->
+    <!-- CAMERA -->
 
     <a-camera
 
@@ -454,10 +442,7 @@
     </a-camera>
 
 
-
-    <!-- ==========================================
-         IMAGE TARGET
-         ========================================== -->
+    <!-- MARIA ARTWORK TARGET -->
 
     <a-entity
 
@@ -470,22 +455,15 @@
     >
 
 
-      <!--
-        IMPORTANT:
-        These are our calibrated TV-screen values.
+      <!-- =================================================
+           ROUNDED CRT VIDEO
 
-        Width  = 0.365
-        Height = 0.240
-        X      = -0.045
-        Y      = -0.025
-        Radius = 0.105
+           DO NOT CHANGE THESE VALUES YET.
 
-        Don't change these for now.
-      -->
+           This is our calibrated working size.
+           ================================================= -->
 
       <a-entity
-
-        id="video-plane"
 
         rounded-video="
           src: #ar-video;
@@ -500,8 +478,6 @@
           0.01
         "
 
-        visible="false"
-
       >
       </a-entity>
 
@@ -512,62 +488,42 @@
   </a-scene>
 
 
-
-  <!-- ==========================================
-       EXPERIENCE LOGIC
-       ========================================== -->
-
   <script>
 
-    const welcomeScreen =
-      document.querySelector(
-        "#welcome-screen"
-      );
-
-
-    const startButton =
-      document.querySelector(
-        "#start-button"
-      );
-
-
     const scene =
-      document.querySelector(
-        "#ar-scene"
-      );
-
+      document.querySelector("#ar-scene");
 
     const target =
-      document.querySelector(
-        "#target"
-      );
-
+      document.querySelector("#target");
 
     const video =
-      document.querySelector(
-        "#ar-video"
-      );
-
-
-    const videoPlane =
-      document.querySelector(
-        "#video-plane"
-      );
-
+      document.querySelector("#ar-video");
 
     const message =
-      document.querySelector(
-        "#message"
-      );
+      document.querySelector("#message");
+
+    const welcome =
+      document.querySelector("#welcome");
+
+    const startButton =
+      document.querySelector("#start-button");
 
 
     let experienceStarted = false;
 
 
+    /*
+    =========================================================
+    START EXPERIENCE
 
-    /* ==========================================
-       START EXPERIENCE
-       ========================================== */
+    The user's ONE intentional tap does three things:
+
+    1. Unlocks video playback on iPhone.
+    2. Starts MindAR.
+    3. Removes the welcome screen.
+
+    =========================================================
+    */
 
     startButton.addEventListener(
       "click",
@@ -577,76 +533,105 @@
           return;
         }
 
-
         experienceStarted = true;
 
-
         startButton.disabled = true;
+        startButton.textContent = "Starting...";
 
-        startButton.innerHTML =
-          "OPENING CAMERA...";
 
+        /*
+        -----------------------------------------------------
+        IMPORTANT iPHONE STEP
+
+        We briefly start the MUTED video during the user's
+        tap. This gives Safari permission to play it later
+        when the AR target is detected.
+
+        Then we immediately pause and rewind it.
+        -----------------------------------------------------
+        */
 
         try {
 
-          const arSystem =
-            scene.systems[
-              "mindar-image-system"
-            ];
+          video.muted = true;
 
+          await video.play();
 
-          await arSystem.start();
+          video.pause();
 
+          video.currentTime = 0;
 
-          /*
-          Camera is now running.
-          Remove the welcome screen.
-          */
+        }
 
-          welcomeScreen.style.display =
-            "none";
+        catch (error) {
 
-
-          /*
-          Show instructions.
-          */
-
-          message.style.display =
-            "block";
-
-          message.innerHTML =
-            "Point your camera at María's TV";
-
-
-          /*
-          The AR video remains hidden
-          until MindAR actually recognizes
-          the target.
-          */
-
-          videoPlane.setAttribute(
-            "visible",
-            "false"
+          console.log(
+            "Video unlock warning:",
+            error
           );
 
         }
 
 
+        /*
+        -----------------------------------------------------
+        START MINDAR
+        -----------------------------------------------------
+        */
+
+        try {
+
+          const mindarSystem =
+            scene.systems["mindar-image-system"];
+
+
+          if (!mindarSystem) {
+
+            throw new Error(
+              "MindAR system is not ready."
+            );
+
+          }
+
+
+          await mindarSystem.start();
+
+
+          /*
+          AR successfully started.
+          Now remove welcome screen.
+          */
+
+          welcome.style.display =
+            "none";
+
+          message.style.display =
+            "block";
+
+          message.innerHTML =
+            "Point your camera at Maria's TV";
+
+        }
+
         catch (error) {
 
           console.error(
-            "Camera could not start:",
+            "MindAR start error:",
             error
           );
 
 
-          experienceStarted = false;
+          /*
+          Allow another attempt if camera permission
+          or initialization failed.
+          */
 
+          experienceStarted = false;
 
           startButton.disabled = false;
 
-          startButton.innerHTML =
-            "TRY AGAIN";
+          startButton.textContent =
+            "Try Again";
 
         }
 
@@ -654,25 +639,15 @@
     );
 
 
-
-    /* ==========================================
-       TARGET FOUND
-       ========================================== */
+    /*
+    =========================================================
+    TARGET FOUND
+    =========================================================
+    */
 
     target.addEventListener(
       "targetFound",
       async () => {
-
-        /*
-        MindAR has recognized the TV artwork.
-        Only NOW do we reveal the video.
-        */
-
-        videoPlane.setAttribute(
-          "visible",
-          "true"
-        );
-
 
         message.innerHTML =
           "TV detected! Playing video...";
@@ -680,44 +655,26 @@
 
         try {
 
-          await video.play();
-
-
           /*
-          Once video successfully starts,
-          remove the message after a moment.
+          Keep it muted so Safari can play it automatically
+          after the initial Start Experience interaction.
           */
 
-          setTimeout(
-            () => {
+          video.muted = true;
 
-              if (!video.paused) {
-
-                message.style.display =
-                  "none";
-
-              }
-
-            },
-            1200
-          );
+          await video.play();
 
         }
-
 
         catch (error) {
 
           console.log(
-            "Playback blocked:",
+            "Playback error:",
             error
           );
 
-
-          message.style.display =
-            "block";
-
           message.innerHTML =
-            "TV detected — tap the screen to play.";
+            "TV detected — tap once to play.";
 
         }
 
@@ -725,136 +682,64 @@
     );
 
 
-
-    /* ==========================================
-       TARGET LOST
-       ========================================== */
+    /*
+    =========================================================
+    TARGET LOST
+    =========================================================
+    */
 
     target.addEventListener(
       "targetLost",
       () => {
 
-        /*
-        Pause the video when the user
-        moves away from the TV.
-        */
-
         video.pause();
 
-
-        /*
-        Hide the AR video completely.
-        */
-
-        videoPlane.setAttribute(
-          "visible",
-          "false"
-        );
-
-
-        /*
-        Tell the guest what to do.
-        */
-
-        message.style.display =
-          "block";
-
         message.innerHTML =
-          "Point your camera back at María's TV";
+          "Point your camera back at Maria's TV.";
 
       }
     );
 
 
+    /*
+    =========================================================
+    EMERGENCY PLAYBACK FALLBACK
 
-    /* ==========================================
-       SAFARI PLAYBACK FALLBACK
-       ========================================== */
+    Normally this should NOT be necessary.
+
+    It is here only in case a particular Safari version
+    still blocks playback.
+    =========================================================
+    */
 
     document.body.addEventListener(
       "click",
       async () => {
 
-        /*
-        Only attempt this after the
-        experience has started.
-        */
-
-        if (!experienceStarted) {
-          return;
-        }
-
-
-        /*
-        Only attempt playback if MindAR
-        currently has the target visible.
-        */
-
-        const isVisible =
-          videoPlane.getAttribute(
-            "visible"
-          );
-
-
         if (
-          isVisible &&
-          video.paused
+          experienceStarted &&
+          video.paused &&
+          welcome.style.display === "none"
         ) {
 
           try {
 
+            video.muted = true;
+
             await video.play();
 
-
-            message.style.display =
-              "none";
-
           }
-
 
           catch (error) {
 
             console.log(
-              "Safari playback still blocked:",
+              "Fallback playback error:",
               error
             );
 
           }
 
         }
-
-      }
-    );
-
-
-
-    /* ==========================================
-       VIDEO ENDED
-       ========================================== */
-
-    video.addEventListener(
-      "ended",
-      () => {
-
-        /*
-        For now we simply display a message.
-
-        NEXT STEP:
-        This is where we'll shut down AR
-        and open the retro music player.
-        */
-
-        videoPlane.setAttribute(
-          "visible",
-          "false"
-        );
-
-
-        message.style.display =
-          "block";
-
-        message.innerHTML =
-          "Story complete ❤️";
 
       }
     );
