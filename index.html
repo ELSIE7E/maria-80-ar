@@ -18,6 +18,7 @@
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
+
     html,
     body {
       margin: 0;
@@ -27,15 +28,15 @@
       font-family: Arial, sans-serif;
     }
 
-    /* =====================================================
+
+    /* ==============================
        WELCOME SCREEN
-       This sits ON TOP of MindAR.
-       MindAR is still allowed to initialize underneath it.
-       ===================================================== */
+       ============================== */
 
     #welcome {
       position: fixed;
       inset: 0;
+
       z-index: 10000;
 
       display: flex;
@@ -48,28 +49,38 @@
       background: #fff8e6;
     }
 
+
     #welcome-card {
       width: 100%;
       max-width: 420px;
+
       text-align: center;
+
       color: #12348a;
     }
 
+
     #welcome-card h1 {
       margin: 0 0 14px 0;
+
       font-size: 34px;
       line-height: 1.05;
     }
 
+
     #welcome-card .subtitle {
       margin: 0 0 28px 0;
+
       font-size: 19px;
       line-height: 1.4;
+
       color: #333;
     }
 
+
     #welcome-card .instructions {
       margin: 0 auto 30px auto;
+
       max-width: 330px;
 
       font-size: 16px;
@@ -77,6 +88,7 @@
 
       color: #555;
     }
+
 
     #start-button {
       border: none;
@@ -95,13 +107,16 @@
       cursor: pointer;
     }
 
+
     #start-button:disabled {
-      opacity: 0.6;
+      opacity: 0.55;
+      cursor: default;
     }
 
-    /* =====================================================
-       AR STATUS MESSAGE
-       ===================================================== */
+
+    /* ==============================
+       AR MESSAGE
+       ============================== */
 
     #message {
       position: fixed;
@@ -130,24 +145,24 @@
 
       display: none;
     }
+
   </style>
 
 
   <script>
-    /*
-    =========================================================
-    CUSTOM ROUNDED VIDEO COMPONENT
 
-    IMPORTANT:
-    These are the dimensions from our working calibrated
-    version. We are preserving them.
-    =========================================================
+    /*
+    ===========================================
+    CUSTOM ROUNDED VIDEO COMPONENT
+    ===========================================
     */
 
     AFRAME.registerComponent(
       "rounded-video",
       {
+
         schema: {
+
           src: {
             type: "selector"
           },
@@ -166,10 +181,12 @@
             type: "number",
             default: 0.10
           }
+
         },
 
 
         init: function () {
+
           const video = this.data.src;
 
           const width = this.data.width;
@@ -178,7 +195,7 @@
 
 
           /*
-          Create video texture
+          VIDEO TEXTURE
           */
 
           const texture =
@@ -195,7 +212,7 @@
 
 
           /*
-          Rectangle geometry
+          VIDEO PLANE
           */
 
           const geometry =
@@ -206,7 +223,7 @@
 
 
           /*
-          Custom material
+          CUSTOM VIDEO MATERIAL
           */
 
           const material =
@@ -215,6 +232,7 @@
               transparent: true,
 
               uniforms: {
+
                 map: {
                   value: texture
                 },
@@ -226,24 +244,30 @@
                 aspect: {
                   value: width / height
                 }
+
               },
 
 
               vertexShader: `
+
                 varying vec2 vUv;
 
                 void main() {
+
                   vUv = uv;
 
                   gl_Position =
                     projectionMatrix *
                     modelViewMatrix *
                     vec4(position, 1.0);
+
                 }
+
               `,
 
 
               fragmentShader: `
+
                 uniform sampler2D map;
 
                 uniform float radius;
@@ -254,11 +278,9 @@
 
                 void main() {
 
+
                   /*
                   VIDEO CROPPING
-
-                  Original video = 16:9.
-                  Crop horizontally rather than stretch.
                   */
 
                   float videoAspect =
@@ -300,17 +322,26 @@
                     distanceToCorner >
                     radius
                   ) {
+
                     discard;
+
                   }
 
+
+                  /*
+                  DISPLAY VIDEO
+                  */
 
                   gl_FragColor =
                     texture2D(
                       map,
                       videoUV
                     );
+
                 }
+
               `
+
             });
 
 
@@ -320,13 +351,17 @@
               material
             );
 
+
           this.el.setObject3D(
             "mesh",
             mesh
           );
+
         }
+
       }
     );
+
   </script>
 
 </head>
@@ -334,9 +369,10 @@
 
 <body>
 
-  <!-- =====================================================
+
+  <!-- ==============================
        WELCOME SCREEN
-       ===================================================== -->
+       ============================== -->
 
   <div id="welcome">
 
@@ -355,8 +391,11 @@
         and then point your phone at María's TV.
       </p>
 
-      <button id="start-button">
-        Start Experience
+      <button
+        id="start-button"
+        disabled
+      >
+        Loading...
       </button>
 
     </div>
@@ -364,22 +403,19 @@
   </div>
 
 
-  <!-- AR STATUS -->
+  <!-- ==============================
+       AR MESSAGE
+       ============================== -->
 
   <div id="message">
     Point your camera at Maria's TV
   </div>
 
 
-  <!-- =====================================================
-       MINDAR SCENE
 
-       IMPORTANT:
-       autoStart is FALSE.
-
-       This lets MindAR load normally but waits for the
-       user's Start Experience tap before activating AR.
-       ===================================================== -->
+  <!-- ==============================
+       AR SCENE
+       ============================== -->
 
   <a-scene
 
@@ -406,7 +442,7 @@
   >
 
 
-    <!-- VIDEO FILE -->
+    <!-- VIDEO -->
 
     <a-assets>
 
@@ -423,11 +459,11 @@
         crossorigin="anonymous"
 
         loop
-        muted
       >
       </video>
 
     </a-assets>
+
 
 
     <!-- CAMERA -->
@@ -442,7 +478,8 @@
     </a-camera>
 
 
-    <!-- MARIA ARTWORK TARGET -->
+
+    <!-- IMAGE TARGET -->
 
     <a-entity
 
@@ -455,13 +492,13 @@
     >
 
 
-      <!-- =================================================
-           ROUNDED CRT VIDEO
+      <!--
+      ==========================================
+      CALIBRATED TV VIDEO
 
-           DO NOT CHANGE THESE VALUES YET.
-
-           This is our calibrated working size.
-           ================================================= -->
+      DO NOT CHANGE THESE VALUES.
+      ==========================================
+      -->
 
       <a-entity
 
@@ -488,6 +525,7 @@
   </a-scene>
 
 
+
   <script>
 
     const scene =
@@ -509,57 +547,169 @@
       document.querySelector("#start-button");
 
 
+    let sceneReady = false;
+
     let experienceStarted = false;
+
+    let targetVisible = false;
+
 
 
     /*
-    =========================================================
+    ==========================================
+    WAIT UNTIL A-FRAME IS REALLY READY
+    ==========================================
+    */
+
+    function enableStartButton() {
+
+      if (sceneReady) {
+        return;
+      }
+
+
+      const mindarSystem =
+        scene.systems["mindar-image-system"];
+
+
+      if (!mindarSystem) {
+
+        /*
+        MindAR is not ready yet.
+        Check again shortly.
+        */
+
+        setTimeout(
+          enableStartButton,
+          150
+        );
+
+        return;
+
+      }
+
+
+      sceneReady = true;
+
+      startButton.disabled = false;
+
+      startButton.textContent =
+        "Start Experience";
+
+    }
+
+
+
+    /*
+    If scene is already loaded,
+    check MindAR immediately.
+
+    Otherwise wait for A-Frame loaded event.
+    */
+
+    if (scene.hasLoaded) {
+
+      enableStartButton();
+
+    }
+
+    else {
+
+      scene.addEventListener(
+        "loaded",
+        enableStartButton
+      );
+
+    }
+
+
+
+    /*
+    ==========================================
     START EXPERIENCE
+    ==========================================
 
-    The user's ONE intentional tap does three things:
+    This is the ONE intentional user tap.
 
-    1. Unlocks video playback on iPhone.
-    2. Starts MindAR.
-    3. Removes the welcome screen.
+    We use it to:
 
-    =========================================================
+    1. Unlock video playback.
+    2. Unlock audio.
+    3. Start MindAR.
+    4. Request camera permission.
+    ==========================================
     */
 
     startButton.addEventListener(
       "click",
       async () => {
 
-        if (experienceStarted) {
+        if (
+          !sceneReady ||
+          experienceStarted
+        ) {
+
           return;
+
         }
+
 
         experienceStarted = true;
 
         startButton.disabled = true;
-        startButton.textContent = "Starting...";
+
+        startButton.textContent =
+          "Starting...";
 
 
         /*
-        -----------------------------------------------------
-        IMPORTANT iPHONE STEP
+        ======================================
+        UNLOCK VIDEO + AUDIO
 
-        We briefly start the MUTED video during the user's
-        tap. This gives Safari permission to play it later
-        when the AR target is detected.
-
-        Then we immediately pause and rewind it.
-        -----------------------------------------------------
+        Because this happens directly from the
+        user's button tap, Safari has a user
+        gesture associated with playback.
+        ======================================
         */
 
         try {
 
+          /*
+          Start muted first for maximum
+          Safari compatibility.
+          */
+
           video.muted = true;
 
+          video.volume = 1.0;
+
+
           await video.play();
+
+
+          /*
+          While still inside the user's
+          interaction, switch audio back on.
+          */
+
+          video.muted = false;
+
+
+          /*
+          We do NOT want the actual movie
+          running behind the welcome screen.
+
+          Pause and reset it immediately.
+          */
 
           video.pause();
 
           video.currentTime = 0;
+
+
+          console.log(
+            "Video/audio unlocked."
+          );
 
         }
 
@@ -573,33 +723,26 @@
         }
 
 
+
         /*
-        -----------------------------------------------------
+        ======================================
         START MINDAR
-        -----------------------------------------------------
+        ======================================
         */
 
         try {
 
           const mindarSystem =
-            scene.systems["mindar-image-system"];
-
-
-          if (!mindarSystem) {
-
-            throw new Error(
-              "MindAR system is not ready."
-            );
-
-          }
+            scene.systems[
+              "mindar-image-system"
+            ];
 
 
           await mindarSystem.start();
 
 
           /*
-          AR successfully started.
-          Now remove welcome screen.
+          CAMERA STARTED SUCCESSFULLY
           */
 
           welcome.style.display =
@@ -622,8 +765,8 @@
 
 
           /*
-          Allow another attempt if camera permission
-          or initialization failed.
+          If something genuinely fails,
+          allow another attempt.
           */
 
           experienceStarted = false;
@@ -639,15 +782,19 @@
     );
 
 
+
     /*
-    =========================================================
+    ==========================================
     TARGET FOUND
-    =========================================================
+    ==========================================
     */
 
     target.addEventListener(
       "targetFound",
       async () => {
+
+        targetVisible = true;
+
 
         message.innerHTML =
           "TV detected! Playing video...";
@@ -656,13 +803,37 @@
         try {
 
           /*
-          Keep it muted so Safari can play it automatically
-          after the initial Start Experience interaction.
+          Audio should now be available because
+          playback was unlocked during the
+          Start Experience tap.
           */
 
-          video.muted = true;
+          video.muted = false;
+
+          video.volume = 1.0;
+
 
           await video.play();
+
+
+          /*
+          Hide message after playback begins
+          so the AR experience looks cleaner.
+          */
+
+          setTimeout(
+            () => {
+
+              if (targetVisible) {
+
+                message.style.display =
+                  "none";
+
+              }
+
+            },
+            1500
+          );
 
         }
 
@@ -673,8 +844,17 @@
             error
           );
 
+
+          /*
+          Safari may still require another
+          interaction for AUDIO on some devices.
+          */
+
+          message.style.display =
+            "block";
+
           message.innerHTML =
-            "TV detected — tap once to play.";
+            "TV detected — tap once for sound.";
 
         }
 
@@ -682,17 +862,25 @@
     );
 
 
+
     /*
-    =========================================================
+    ==========================================
     TARGET LOST
-    =========================================================
+    ==========================================
     */
 
     target.addEventListener(
       "targetLost",
       () => {
 
+        targetVisible = false;
+
+
         video.pause();
+
+
+        message.style.display =
+          "block";
 
         message.innerHTML =
           "Point your camera back at Maria's TV.";
@@ -701,15 +889,18 @@
     );
 
 
+
     /*
-    =========================================================
-    EMERGENCY PLAYBACK FALLBACK
+    ==========================================
+    SAFARI AUDIO FALLBACK
+    ==========================================
 
-    Normally this should NOT be necessary.
+    This should only be needed if Safari
+    refuses audio despite our initial unlock.
 
-    It is here only in case a particular Safari version
-    still blocks playback.
-    =========================================================
+    If the message says "tap once for sound",
+    one tap will resume with audio.
+    ==========================================
     */
 
     document.body.addEventListener(
@@ -717,23 +908,38 @@
       async () => {
 
         if (
-          experienceStarted &&
-          video.paused &&
-          welcome.style.display === "none"
+          !experienceStarted ||
+          !targetVisible
+        ) {
+
+          return;
+
+        }
+
+
+        if (
+          video.paused ||
+          video.muted
         ) {
 
           try {
 
-            video.muted = true;
+            video.muted = false;
+
+            video.volume = 1.0;
 
             await video.play();
+
+
+            message.style.display =
+              "none";
 
           }
 
           catch (error) {
 
             console.log(
-              "Fallback playback error:",
+              "Safari audio fallback:",
               error
             );
 
