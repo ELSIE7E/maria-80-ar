@@ -1,6 +1,6 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
 
@@ -9,18 +9,13 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
 
-  <title>Maria 80 AR</title>
+  <title>María Huerta — 80 Años de Historias</title>
 
-  <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-
-  <!-- MindAR -->
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-
-    html,
-    body {
+    html, body {
       margin: 0;
       width: 100%;
       height: 100%;
@@ -28,359 +23,263 @@
       font-family: Arial, sans-serif;
     }
 
-
-    /* ==============================
-       WELCOME SCREEN
-       ============================== */
-
     #welcome {
       position: fixed;
       inset: 0;
-
       z-index: 10000;
-
       display: flex;
       align-items: center;
       justify-content: center;
-
       padding: 30px;
       box-sizing: border-box;
-
       background: #fff8e6;
     }
-
 
     #welcome-card {
       width: 100%;
       max-width: 420px;
-
       text-align: center;
-
       color: #12348a;
     }
 
-
     #welcome-card h1 {
-      margin: 0 0 14px 0;
-
+      margin: 0 0 14px;
       font-size: 34px;
-      line-height: 1.05;
     }
 
-
-    #welcome-card .subtitle {
-      margin: 0 0 28px 0;
-
+    .subtitle {
+      margin: 0 0 28px;
       font-size: 19px;
-      line-height: 1.4;
-
       color: #333;
     }
 
-
-    #welcome-card .instructions {
-      margin: 0 auto 30px auto;
-
+    .instructions {
+      margin: 0 auto 30px;
       max-width: 330px;
-
       font-size: 16px;
       line-height: 1.5;
-
       color: #555;
     }
-
 
     #start-button {
       border: none;
       border-radius: 999px;
-
       padding: 16px 30px;
-
       min-width: 220px;
-
       background: #12348a;
       color: white;
-
       font-size: 18px;
       font-weight: bold;
-
       cursor: pointer;
     }
-
 
     #start-button:disabled {
       opacity: 0.55;
       cursor: default;
     }
 
-
-    /* ==============================
-       AR MESSAGE
-       ============================== */
-
     #message {
       position: fixed;
-
       top: max(20px, env(safe-area-inset-top));
       left: 50%;
-
       transform: translateX(-50%);
-
       z-index: 9999;
-
       width: 80%;
       max-width: 350px;
-
       padding: 12px 20px;
-
       box-sizing: border-box;
-
       background: rgba(0, 0, 0, 0.75);
       color: white;
-
       border-radius: 20px;
-
       font-size: 16px;
       text-align: center;
-
       display: none;
     }
-
   </style>
 
-
   <script>
-
     /*
-    ===========================================
-    CUSTOM ROUNDED VIDEO COMPONENT
-    ===========================================
+      EXACT TV SCREEN VIDEO MASK
+
+      The SVG was generated from the full
+      2048 x 2048 artwork.
+
+      The new MindAR target was cropped to
+      1970 x 1970, removing approximately
+      39 pixels of bleed from each edge.
+
+      The SVG mask is scaled to compensate.
+
+      Video is cropped to fill the curved
+      television screen without stretching.
     */
 
-    AFRAME.registerComponent(
-      "rounded-video",
-      {
-
-        schema: {
-
-          src: {
-            type: "selector"
-          },
-
-          width: {
-            type: "number",
-            default: 0.47
-          },
-
-          height: {
-            type: "number",
-            default: 0.32
-          },
-
-          radius: {
-            type: "number",
-            default: 0.10
-          }
-
-        },
-
-
-        init: function () {
-
-          const video = this.data.src;
-
-          const width = this.data.width;
-          const height = this.data.height;
-          const radius = this.data.radius;
-
-
-          /*
-          VIDEO TEXTURE
-          */
-
-          const texture =
-            new THREE.VideoTexture(video);
-
-          texture.minFilter =
-            THREE.LinearFilter;
-
-          texture.magFilter =
-            THREE.LinearFilter;
-
-          texture.colorSpace =
-            THREE.SRGBColorSpace;
-
-
-          /*
-          VIDEO PLANE
-          */
-
-          const geometry =
-            new THREE.PlaneGeometry(
-              width,
-              height
-            );
-
-
-          /*
-          CUSTOM VIDEO MATERIAL
-          */
-
-          const material =
-            new THREE.ShaderMaterial({
-
-              transparent: true,
-
-              uniforms: {
-
-                map: {
-                  value: texture
-                },
-
-                radius: {
-                  value: radius
-                },
-
-                aspect: {
-                  value: width / height
-                }
-
-              },
-
-
-              vertexShader: `
-
-                varying vec2 vUv;
-
-                void main() {
-
-                  vUv = uv;
-
-                  gl_Position =
-                    projectionMatrix *
-                    modelViewMatrix *
-                    vec4(position, 1.0);
-
-                }
-
-              `,
-
-
-              fragmentShader: `
-
-                uniform sampler2D map;
-
-                uniform float radius;
-                uniform float aspect;
-
-                varying vec2 vUv;
-
-
-                void main() {
-
-
-                  /*
-                  VIDEO CROPPING
-                  */
-
-                  float videoAspect =
-                    16.0 / 9.0;
-
-                  vec2 videoUV =
-                    vUv;
-
-                  float crop =
-                    aspect / videoAspect;
-
-                  videoUV.x =
-                    0.5 +
-                    (vUv.x - 0.5) *
-                    crop;
-
-
-                  /*
-                  ROUNDED CORNERS
-                  */
-
-                  vec2 p =
-                    abs(vUv - 0.5);
-
-                  vec2 box =
-                    vec2(
-                      0.5 - radius,
-                      0.5 - radius
-                    );
-
-                  vec2 q =
-                    p - box;
-
-                  float distanceToCorner =
-                    length(max(q, 0.0));
-
-
-                  if (
-                    distanceToCorner >
-                    radius
-                  ) {
-
-                    discard;
-
-                  }
-
-
-                  /*
-                  DISPLAY VIDEO
-                  */
-
-                  gl_FragColor =
-                    texture2D(
-                      map,
-                      videoUV
-                    );
-
-                }
-
-              `
-
-            });
-
-
-          const mesh =
-            new THREE.Mesh(
-              geometry,
-              material
-            );
-
-
-          this.el.setObject3D(
-            "mesh",
-            mesh
-          );
-
+    AFRAME.registerComponent("tv-screen-video", {
+      schema: {
+        src: { type: "selector" },
+        mask: {
+          type: "string",
+          default: "./Maria_Huerta_AR_contorno_pantalla.svg"
         }
+      },
 
+      init: function () {
+        const video = this.data.src;
+
+        // SVG screen bounds in its 1254 x 1254 space.
+        const minX = 141 / 1254;
+        const maxX = 984 / 1254;
+
+        // Convert image top-origin Y to UV bottom-origin Y.
+        const minY = 1 - 1040 / 1254;
+        const maxY = 1 - 397 / 1254;
+
+        const screenWidth = maxX - minX;
+        const screenHeight = maxY - minY;
+
+        // Full artwork is 2048 px.
+        // Trimmed tracking image is 1970 px.
+        const targetScale = 2048 / 1970;
+
+        const videoTexture = new THREE.VideoTexture(video);
+
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+        const maskTexture = new THREE.TextureLoader().load(
+          this.data.mask,
+          () => {
+            console.log("TV screen mask loaded.");
+          },
+          undefined,
+          (error) => {
+            console.error("Unable to load SVG mask:", error);
+          }
+        );
+
+        maskTexture.minFilter = THREE.LinearFilter;
+        maskTexture.magFilter = THREE.LinearFilter;
+
+        const geometry = new THREE.PlaneGeometry(
+          targetScale,
+          targetScale
+        );
+
+        const material = new THREE.ShaderMaterial({
+          transparent: true,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+
+          uniforms: {
+            videoMap: { value: videoTexture },
+            maskMap: { value: maskTexture },
+
+            screenBounds: {
+              value: new THREE.Vector4(
+                minX, minY, screenWidth, screenHeight
+              )
+            },
+
+            videoAspect: {
+              value: 16.0 / 9.0
+            }
+          },
+
+          vertexShader: `
+            varying vec2 vUv;
+
+            void main() {
+              vUv = uv;
+
+              gl_Position =
+                projectionMatrix *
+                modelViewMatrix *
+                vec4(position, 1.0);
+            }
+          `,
+
+          fragmentShader: `
+            uniform sampler2D videoMap;
+            uniform sampler2D maskMap;
+            uniform vec4 screenBounds;
+            uniform float videoAspect;
+
+            varying vec2 vUv;
+
+            void main() {
+              vec4 maskColor = texture2D(maskMap, vUv);
+
+              if (maskColor.a < 0.01) {
+                discard;
+              }
+
+              // Coordinates within the TV screen.
+              vec2 screenUV =
+                (vUv - screenBounds.xy) /
+                screenBounds.zw;
+
+              // Crop the video to fill the screen.
+              // Never stretch the video.
+              float screenAspect =
+                screenBounds.z / screenBounds.w;
+
+              float ratio =
+                screenAspect / videoAspect;
+
+              vec2 videoUV = screenUV;
+
+              if (ratio < 1.0) {
+                videoUV.x =
+                  0.5 + (screenUV.x - 0.5) * ratio;
+              } else {
+                videoUV.y =
+                  0.5 + (screenUV.y - 0.5) / ratio;
+              }
+
+              vec4 color =
+                texture2D(videoMap, videoUV);
+
+              gl_FragColor =
+                vec4(color.rgb, maskColor.a);
+            }
+          `
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // Keep the video slightly above the target.
+        mesh.position.z = 0.01;
+
+        mesh.frustumCulled = false;
+
+        this.el.setObject3D("mesh", mesh);
+
+        this.videoTexture = videoTexture;
+        this.maskTexture = maskTexture;
+        this.geometry = geometry;
+        this.material = material;
+      },
+
+      remove: function () {
+        this.el.removeObject3D("mesh");
+
+        if (this.videoTexture) this.videoTexture.dispose();
+        if (this.maskTexture) this.maskTexture.dispose();
+        if (this.geometry) this.geometry.dispose();
+        if (this.material) this.material.dispose();
       }
-    );
-
+    });
   </script>
-
 </head>
-
 
 <body>
 
-
-  <!-- ==============================
-       WELCOME SCREEN
-       ============================== -->
+  <!-- WELCOME SCREEN -->
 
   <div id="welcome">
-
     <div id="welcome-card">
-
-      <h1>
-        María Huerta
-      </h1>
+      <h1>María Huerta</h1>
 
       <p class="subtitle">
         80 años de historias
@@ -391,39 +290,26 @@
         and then point your phone at María's TV.
       </p>
 
-      <button
-        id="start-button"
-        disabled
-      >
+      <button id="start-button" disabled>
         Loading...
       </button>
-
     </div>
-
   </div>
 
-
-  <!-- ==============================
-       AR MESSAGE
-       ============================== -->
+  <!-- AR MESSAGE -->
 
   <div id="message">
-    Point your camera at Maria's TV
+    Point your camera at María's TV
   </div>
 
-
-
-  <!-- ==============================
-       AR SCENE
-       ============================== -->
+  <!-- AR SCENE -->
 
   <a-scene
-
     id="ar-scene"
 
     mindar-image="
-        imageTargetSrc: ./targets.mind;
-        autoStart: false;
+      imageTargetSrc: ./targets.mind;
+      autoStart: false;
     "
 
     color-space="sRGB"
@@ -434,525 +320,213 @@
     "
 
     vr-mode-ui="enabled: false"
-
     device-orientation-permission-ui="enabled: false"
-
     embedded
-
   >
 
-
-    <!-- VIDEO -->
-
     <a-assets>
-
       <video
         id="ar-video"
-
         src="./Larga_Vida_WebAR_final.mp4"
-
         preload="auto"
-
         playsinline
         webkit-playsinline
-
         crossorigin="anonymous"
-
         loop
-      >
-      </video>
-
+      ></video>
     </a-assets>
 
-
-
-    <!-- CAMERA -->
-
     <a-camera
-
       position="0 0 0"
-
       look-controls="enabled: false"
+    ></a-camera>
 
-    >
-    </a-camera>
-
-
-
-    <!-- IMAGE TARGET -->
+    <!-- NEW IMAGE TARGET -->
 
     <a-entity
-
       id="target"
-
-      mindar-image-target="
-        targetIndex: 0
-      "
-
+      mindar-image-target="targetIndex: 0"
     >
 
-
-      <!--
-      ==========================================
-      CALIBRATED TV VIDEO
-
-      DO NOT CHANGE THESE VALUES.
-      ==========================================
-      -->
+      <!-- PRECISE CURVED TV SCREEN -->
 
       <a-entity
-
-        rounded-video="
+        id="tv-video"
+        tv-screen-video="
           src: #ar-video;
-          width: 0.365;
-          height: 0.240;
-          radius: 0.105;
+          mask: ./Maria_Huerta_AR_contorno_pantalla.svg;
         "
-
-        position="
-          -0.045
-          -0.025
-          0.01
-        "
-
-      >
-      </a-entity>
-
+      ></a-entity>
 
     </a-entity>
 
-
   </a-scene>
 
-
-
   <script>
+    const scene = document.querySelector("#ar-scene");
+    const target = document.querySelector("#target");
+    const video = document.querySelector("#ar-video");
 
-    const scene =
-      document.querySelector("#ar-scene");
-
-    const target =
-      document.querySelector("#target");
-
-    const video =
-      document.querySelector("#ar-video");
-
-    const message =
-      document.querySelector("#message");
-
-    const welcome =
-      document.querySelector("#welcome");
-
-    const startButton =
-      document.querySelector("#start-button");
-
+    const message = document.querySelector("#message");
+    const welcome = document.querySelector("#welcome");
+    const startButton = document.querySelector("#start-button");
 
     let sceneReady = false;
-
     let experienceStarted = false;
-
     let targetVisible = false;
 
-
-
     /*
-    ==========================================
-    WAIT UNTIL A-FRAME IS REALLY READY
-    ==========================================
+      WAIT FOR A-FRAME AND MINDAR
     */
 
     function enableStartButton() {
-
-      if (sceneReady) {
-        return;
-      }
-
+      if (sceneReady) return;
 
       const mindarSystem =
         scene.systems["mindar-image-system"];
 
-
       if (!mindarSystem) {
-
-        /*
-        MindAR is not ready yet.
-        Check again shortly.
-        */
-
-        setTimeout(
-          enableStartButton,
-          150
-        );
-
+        setTimeout(enableStartButton, 150);
         return;
-
       }
-
 
       sceneReady = true;
 
       startButton.disabled = false;
-
-      startButton.textContent =
-        "Start Experience";
-
+      startButton.textContent = "Start Experience";
     }
-
-
-
-    /*
-    If scene is already loaded,
-    check MindAR immediately.
-
-    Otherwise wait for A-Frame loaded event.
-    */
 
     if (scene.hasLoaded) {
-
       enableStartButton();
-
-    }
-
-    else {
-
+    } else {
       scene.addEventListener(
         "loaded",
         enableStartButton
       );
-
     }
 
-
-
     /*
-    ==========================================
-    START EXPERIENCE
-    ==========================================
-
-    This is the ONE intentional user tap.
-
-    We use it to:
-
-    1. Unlock video playback.
-    2. Unlock audio.
-    3. Start MindAR.
-    4. Request camera permission.
-    ==========================================
+      START EXPERIENCE
+      PRESERVE SAFARI AUDIO UNLOCK
     */
 
-    startButton.addEventListener(
-      "click",
-      async () => {
+    startButton.addEventListener("click", async () => {
+      if (!sceneReady || experienceStarted) return;
 
-        if (
-          !sceneReady ||
-          experienceStarted
-        ) {
+      experienceStarted = true;
 
-          return;
+      startButton.disabled = true;
+      startButton.textContent = "Starting...";
 
-        }
+      try {
+        video.muted = true;
+        video.volume = 1.0;
 
+        await video.play();
 
-        experienceStarted = true;
-
-        startButton.disabled = true;
-
-        startButton.textContent =
-          "Starting...";
-
-
-        /*
-        ======================================
-        UNLOCK VIDEO + AUDIO
-
-        Because this happens directly from the
-        user's button tap, Safari has a user
-        gesture associated with playback.
-        ======================================
-        */
-
-        try {
-
-          /*
-          Start muted first for maximum
-          Safari compatibility.
-          */
-
-          video.muted = true;
-
-          video.volume = 1.0;
-
-
-          await video.play();
-
-
-          /*
-          While still inside the user's
-          interaction, switch audio back on.
-          */
-
-          video.muted = false;
-
-
-          /*
-          We do NOT want the actual movie
-          running behind the welcome screen.
-
-          Pause and reset it immediately.
-          */
-
-          video.pause();
-
-          video.currentTime = 0;
-
-
-          console.log(
-            "Video/audio unlocked."
-          );
-
-        }
-
-        catch (error) {
-
-          console.log(
-            "Video unlock warning:",
-            error
-          );
-
-        }
-
-
-
-        /*
-        ======================================
-        START MINDAR
-        ======================================
-        */
-
-        try {
-
-          const mindarSystem =
-            scene.systems[
-              "mindar-image-system"
-            ];
-
-
-          await mindarSystem.start();
-
-
-          /*
-          CAMERA STARTED SUCCESSFULLY
-          */
-
-          welcome.style.display =
-            "none";
-
-          message.style.display =
-            "block";
-
-          message.innerHTML =
-            "Point your camera at Maria's TV";
-
-        }
-
-        catch (error) {
-
-          console.error(
-            "MindAR start error:",
-            error
-          );
-
-
-          /*
-          If something genuinely fails,
-          allow another attempt.
-          */
-
-          experienceStarted = false;
-
-          startButton.disabled = false;
-
-          startButton.textContent =
-            "Try Again";
-
-        }
-
-      }
-    );
-
-
-
-    /*
-    ==========================================
-    TARGET FOUND
-    ==========================================
-    */
-
-    target.addEventListener(
-      "targetFound",
-      async () => {
-
-        targetVisible = true;
-
-
-        message.innerHTML =
-          "TV detected! Playing video...";
-
-
-        try {
-
-          /*
-          Audio should now be available because
-          playback was unlocked during the
-          Start Experience tap.
-          */
-
-          video.muted = false;
-
-          video.volume = 1.0;
-
-
-          await video.play();
-
-
-          /*
-          Hide message after playback begins
-          so the AR experience looks cleaner.
-          */
-
-          setTimeout(
-            () => {
-
-              if (targetVisible) {
-
-                message.style.display =
-                  "none";
-
-              }
-
-            },
-            1500
-          );
-
-        }
-
-        catch (error) {
-
-          console.log(
-            "Playback error:",
-            error
-          );
-
-
-          /*
-          Safari may still require another
-          interaction for AUDIO on some devices.
-          */
-
-          message.style.display =
-            "block";
-
-          message.innerHTML =
-            "TV detected — tap once for sound.";
-
-        }
-
-      }
-    );
-
-
-
-    /*
-    ==========================================
-    TARGET LOST
-    ==========================================
-    */
-
-    target.addEventListener(
-      "targetLost",
-      () => {
-
-        targetVisible = false;
-
+        video.muted = false;
 
         video.pause();
+        video.currentTime = 0;
 
-
-        message.style.display =
-          "block";
-
-        message.innerHTML =
-          "Point your camera back at Maria's TV.";
-
+        console.log("Video/audio unlocked.");
+      } catch (error) {
+        console.log("Video unlock warning:", error);
       }
-    );
 
+      try {
+        const mindarSystem =
+          scene.systems["mindar-image-system"];
 
+        await mindarSystem.start();
+
+        welcome.style.display = "none";
+
+        message.style.display = "block";
+        message.textContent =
+          "Point your camera at María's TV";
+
+      } catch (error) {
+        console.error("MindAR start error:", error);
+
+        experienceStarted = false;
+
+        startButton.disabled = false;
+        startButton.textContent = "Try Again";
+      }
+    });
 
     /*
-    ==========================================
-    SAFARI AUDIO FALLBACK
-    ==========================================
-
-    This should only be needed if Safari
-    refuses audio despite our initial unlock.
-
-    If the message says "tap once for sound",
-    one tap will resume with audio.
-    ==========================================
+      TARGET FOUND
     */
 
-    document.body.addEventListener(
-      "click",
-      async () => {
+    target.addEventListener("targetFound", async () => {
+      targetVisible = true;
 
-        if (
-          !experienceStarted ||
-          !targetVisible
-        ) {
+      message.style.display = "block";
+      message.textContent =
+        "TV detected! Playing video...";
 
-          return;
+      try {
+        video.muted = false;
+        video.volume = 1.0;
 
-        }
+        await video.play();
 
-
-        if (
-          video.paused ||
-          video.muted
-        ) {
-
-          try {
-
-            video.muted = false;
-
-            video.volume = 1.0;
-
-            await video.play();
-
-
-            message.style.display =
-              "none";
-
+        setTimeout(() => {
+          if (targetVisible) {
+            message.style.display = "none";
           }
+        }, 1500);
 
-          catch (error) {
+      } catch (error) {
+        console.log("Playback error:", error);
 
-            console.log(
-              "Safari audio fallback:",
-              error
-            );
-
-          }
-
-        }
-
+        message.style.display = "block";
+        message.textContent =
+          "TV detected — tap once for sound.";
       }
-    );
+    });
+
+    /*
+      TARGET LOST
+    */
+
+    target.addEventListener("targetLost", () => {
+      targetVisible = false;
+
+      video.pause();
+
+      message.style.display = "block";
+      message.textContent =
+        "Point your camera back at María's TV.";
+    });
+
+    /*
+      SAFARI AUDIO FALLBACK
+    */
+
+    document.body.addEventListener("click", async () => {
+      if (!experienceStarted || !targetVisible) {
+        return;
+      }
+
+      if (video.paused || video.muted) {
+        try {
+          video.muted = false;
+          video.volume = 1.0;
+
+          await video.play();
+
+          message.style.display = "none";
+
+        } catch (error) {
+          console.log("Safari audio fallback:", error);
+        }
+      }
+    });
 
   </script>
 
-
 </body>
-
 </html>
